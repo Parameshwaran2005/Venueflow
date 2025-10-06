@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 const API_BASE_URL = 'http://localhost:3001';
 // IMPORTANT: Replace with your actual Gemini API key.
 // You can get one for free from Google AI Studio: https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = 'AIzaSyCp6fQV3-SPDWUHvXXoRsYuQRPBBnp4cj4';
+const GEMINI_API_KEY = 'Your-Api-Key';
 
 const VENUES_CONFIG = {
   auditorium: {
