@@ -27,6 +27,13 @@
       "email": "tushar@gmail.com",
       "password": "tushar",
       "role": "user"
+    },
+    {
+      "id": "user_1759749005377",
+      "name": "tushar11",
+      "email": "tushar11@gmail.com",
+      "password": "123456",
+      "role": "user"
     }
   ],
   "bookings": [
@@ -54,7 +61,7 @@
         "refreshments": "Tea/Coffee for 20 members",
         "av": "Audio-Video System"
       },
-      "status": "pending",
+      "status": "confirmed",
       "bookedBy": "Alex"
     },
     {
@@ -136,6 +143,56 @@
       "bookedBy": "Admin",
       "userId": "admin01",
       "status": "rejected"
+    },
+    {
+      "id": "e108",
+      "venueId": "ramanujan",
+      "bookingDateTime": "2025-10-02T10:00",
+      "endTime": "2025-10-02T11:00",
+      "details": {
+        "refreshments": "Tea/Coffee for 10 members"
+      },
+      "bookedBy": "Admin",
+      "userId": "admin01",
+      "status": "rejected"
+    },
+    {
+      "id": "5ccc",
+      "venueId": "auditorium",
+      "bookingDateTime": "2025-10-10T10:00",
+      "endTime": "2025-10-10T11:00",
+      "details": {
+        "refreshments": "Tea/Coffee & Cookies for 10 members"
+      },
+      "bookedBy": "tushar11",
+      "userId": "user_1759749005377",
+      "status": "rejected"
+    },
+    {
+      "id": "c674",
+      "venueId": "ramanujan",
+      "bookingDateTime": "2025-10-09T10:00",
+      "endTime": "2025-10-09T11:00",
+      "details": {
+        "refreshments": "Tea/Coffee for 10 members"
+      },
+      "bookedBy": "Tushar",
+      "userId": "2523",
+      "status": "rejected"
+    },
+    {
+      "id": "cdcf",
+      "venueId": "auditorium",
+      "bookingDateTime": "2025-10-07T10:00",
+      "endTime": "2025-10-07T11:00",
+      "details": {
+        "av": "Sound System",
+        "ac": "Yes",
+        "refreshments": "High Tea for 10000 members"
+      },
+      "bookedBy": "Admin",
+      "userId": "admin01",
+      "status": "confirmed"
     }
   ]
 }

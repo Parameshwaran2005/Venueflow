@@ -1,14 +1,15 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 // --- CONFIGURATION ---
 const API_BASE_URL = 'http://localhost:3001';
 // IMPORTANT: Replace with your actual Gemini API key.
 // You can get one for free from Google AI Studio: https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE';
+const GEMINI_API_KEY = 'AIzaSyCp6fQV3-SPDWUHvXXoRsYuQRPBBnp4cj4';
 
 const VENUES_CONFIG = {
   auditorium: {
-    id: 'auditorium', name: 'Grand Auditorium', features: ['seating', 'av', 'ac', 'refreshments'],
+    id: 'auditorium', name: 'Grand Auditorium', features: ['seating', 'av', 'ac', 'refreshments'], capacity: 500, basePrice: 15000,
     options: { 
       seating: ['VIP', 'Audience', 'Stage-side'], 
       av: ['Projector', 'Sound System', 'Lighting'], 
@@ -16,7 +17,7 @@ const VENUES_CONFIG = {
     }
   },
   ramanujan: {
-    id: 'ramanujan', name: 'Ramanujan Hall', features: ['seating', 'refreshments', 'av'],
+    id: 'ramanujan', name: 'Ramanujan Hall', features: ['seating', 'refreshments', 'av'], capacity: 200, basePrice: 18000,
     options: { 
       seating: ['Guest Special Seating'], 
       av: ['Audio-Video System'], 
@@ -24,7 +25,7 @@ const VENUES_CONFIG = {
     }
   },
   impactGreens: {
-    id: 'impactGreens', name: 'Impact Greens (Lawn)', features: ['seating', 'av'],
+    id: 'impactGreens', name: 'Impact Greens (Lawn)', features: ['seating', 'av'], capacity: 1000, basePrice: 112000,
     options: { 
       seating: ['Guest-Only', 'Guest + Audience'], 
       av: ['Audio-Visual System'] 
@@ -100,41 +101,7 @@ const Modal = ({ isOpen, onClose, children }) => {
   );
 };
 
-// --- BOOKING FORM & AI ASSISTANT COMPONENTS ---
-
-const AIBookingAssistant = ({ onSuggestion, date, setIsLoading, isLoading }) => {
-    const [prompt, setPrompt] = useState('');
-    const handleGetSuggestion = async () => {
-        if (!prompt || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-            alert("Please provide a prompt and ensure your Gemini API key is set.");
-            return;
-        }
-        setIsLoading(true);
-        const systemPrompt = `You are an expert venue booking assistant. A user wants to book a venue for ${date}. Analyze their request and return a JSON object with the most suitable venue and pre-filled details. The available venues are: ${JSON.stringify(Object.values(VENUES_CONFIG).map(v => ({id: v.id, name: v.name, features: v.features})))}. Your response MUST be a single, valid JSON object with the keys "venueId" and "details". The "details" object should contain keys relevant to the chosen venue's features. For example: { "venueId": "auditorium", "details": { "seating": "VIP", "av": "Projector", "ac": "Yes", "refreshments": "Lunch Buffet for 150 members" } }.`;
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
-        const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "venueId": { "type": "STRING" }, "details": { "type": "OBJECT" } }, required: ["venueId", "details"] } } };
-        try {
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`Gemini API error: ${response.statusText}`);
-            const result = await response.json();
-            const suggestionJson = JSON.parse(result.candidates[0].content.parts[0].text);
-            onSuggestion(suggestionJson);
-        } catch (error) {
-            console.error("Error with Gemini API:", error);
-            alert("Sorry, I couldn't get a suggestion. Please check the console or your API key.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    return (
-        <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-white flex items-center gap-2">✨ AI Booking Assistant</h3>
-            <p className="text-gray-300">Describe your event, and I'll suggest the best venue and options for you on <span className="font-semibold text-indigo-300">{date}</span>.</p>
-            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="e.g., 'A 3-day corporate event for 100 people with projectors, sound system, and a lunch buffet.'" className="w-full h-24 p-2 bg-white/5 border border-white/20 rounded-lg resize-none"></textarea>
-            <PrimaryButton onClick={handleGetSuggestion} isLoading={isLoading}>Get Suggestion</PrimaryButton>
-        </div>
-    );
-};
+// --- BOOKING FORM COMPONENT ---
 
 const BookingForm = ({ venueId, onBook, date, user, initialDetails = {} }) => {
     const venue = VENUES_CONFIG[venueId];
@@ -188,63 +155,67 @@ const BookingForm = ({ venueId, onBook, date, user, initialDetails = {} }) => {
 const LandingPage = ({ onGetStarted }) => {
     useEffect(() => {
         const style = document.createElement('style');
-        // Add Google Font import for 'Poppins'
-        const fontLink = document.createElement('link');
-        fontLink.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@300;700;900&display=swap";
-        fontLink.rel = "stylesheet";
-        document.head.appendChild(fontLink);
-        
         style.textContent = `
-            .font-poppins { font-family: 'Poppins', sans-serif; }
-            .animated-gradient-bg {
-                background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1c1c3c);
-                background-size: 400% 400%;
-                animation: gradient 15s ease infinite;
+            @keyframes float {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+                100% { transform: translateY(0px); }
             }
-
-            @keyframes gradient {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
-            }
-            
-            @keyframes fade-in-scale {
-                0% { opacity: 0; transform: scale(0.95); }
-                100% { opacity: 1; transform: scale(1); }
-            }
-
-            .content-animation {
-                animation: fade-in-scale 1s ease-out forwards;
-            }
+            .float-1 { animation: float 6s ease-in-out infinite; }
+            .float-2 { animation: float 7s ease-in-out infinite; animation-delay: 1s; }
+            .float-3 { animation: float 8s ease-in-out infinite; animation-delay: 0.5s; }
         `;
         document.head.appendChild(style);
-        
         return () => {
             document.head.removeChild(style);
-            document.head.removeChild(fontLink);
         };
     }, []);
 
     return (
-        <div className="h-screen w-screen relative flex items-center justify-center overflow-hidden animated-gradient-bg">
-            <div className="absolute inset-0 bg-black/30"></div>
-            <div className="relative z-10 text-center p-8 content-animation">
-                <h1 className="text-6xl md:text-8xl font-black text-white uppercase tracking-wider font-poppins" style={{textShadow: '0 0 20px rgba(192, 132, 252, 0.6)'}}>VenueFlow</h1>
-                <p className="mt-4 text-lg md:text-xl text-gray-300 font-light font-poppins">Smart venues. Perfect moments.</p>
-                <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                    <button 
-                        onClick={onGetStarted} 
-                        className="w-full sm:w-auto font-bold py-3 px-8 rounded-lg bg-indigo-500/80 text-white border border-indigo-400 backdrop-blur-md hover:bg-indigo-500 shadow-[0_0_15px_rgba(139,92,246,0.5)] hover:shadow-[0_0_25px_rgba(139,92,246,0.8)] transition-all duration-300 transform hover:scale-105">
-                        Get Started
-                    </button>
-                    <button className="w-full sm:w-auto font-bold py-3 px-8 rounded-lg border-2 border-white/20 text-white/80 bg-white/10 backdrop-blur-md hover:bg-white/20 hover:text-white transition-all duration-300 transform hover:scale-105">Learn More</button>
+        <div className="h-screen w-screen relative flex flex-col justify-center items-center overflow-hidden bg-[#0a0a2a] text-white">
+             <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 via-transparent to-blue-900/30"></div>
+            <nav className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-20">
+                <h2 className="text-2xl font-bold tracking-widest uppercase">VenueFlow</h2>
+                <div>
+                    <button className="mr-4 text-gray-300 hover:text-white transition-colors">Home</button>
+                    <button onClick={onGetStarted} className="bg-cyan-500/80 text-white font-semibold py-2 px-5 rounded-lg hover:bg-cyan-500 transition-colors">Login</button>
                 </div>
-            </div>
+            </nav>
+            <main className="relative z-10 grid md:grid-cols-2 gap-8 items-center max-w-7xl mx-auto px-8">
+                <div className="text-center md:text-left animate-fade-in-up">
+                    <h1 className="text-5xl lg:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-500">Premium Venue</h1>
+                    <h1 className="text-5xl lg:text-7xl font-extrabold mt-2 text-white">Booking Made Simple.</h1>
+                    <p className="mt-6 text-lg text-gray-400 max-w-lg mx-auto md:mx-0">Book auditoriums, halls, lawns, and transport facilities with our cutting-edge platform.</p>
+                    <div className="mt-8 flex gap-4 justify-center md:justify-start">
+                        <button onClick={onGetStarted} className="bg-cyan-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-cyan-600 transition-transform transform hover:scale-105">Get Started</button>
+                    </div>
+                </div>
+                <div className="relative hidden md:block animate-fade-in-up animation-delay-300">
+                    <div className="absolute top-10 right-10 float-1">
+                        <GlassCard className="p-4 w-60">
+                            <h3 className="font-bold text-lg text-cyan-400">Auditorium</h3>
+                            <p className="text-sm text-gray-300">{VENUES_CONFIG.auditorium.capacity} capacity</p>
+                        </GlassCard>
+                    </div>
+                     <div className="absolute top-40 left-0 float-2">
+                         <GlassCard className="p-4 w-60">
+                            <h3 className="font-bold text-lg text-cyan-400">Ramanujan Hall</h3>
+                            <p className="text-sm text-gray-300">{VENUES_CONFIG.ramanujan.capacity} capacity</p>
+                        </GlassCard>
+                    </div>
+                     <div className="absolute top-80 right-20 float-3">
+                         <GlassCard className="p-4 w-60">
+                            <h3 className="font-bold text-lg text-cyan-400">Impact Greens</h3>
+                            <p className="text-sm text-gray-300">{VENUES_CONFIG.impactGreens.capacity} capacity</p>
+                        </GlassCard>
+                    </div>
+                </div>
+            </main>
         </div>
     );
 };
 
-const LoginPage = ({ onLogin, onSignUp }) => {
+const LoginPage = ({ onLogin, onSignUp, onBack }) => {
     const [isLoginView, setIsLoginView] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -269,7 +240,8 @@ const LoginPage = ({ onLogin, onSignUp }) => {
     };
     return (
         <div className="w-full max-w-md mx-auto animate-fade-in-up">
-            <GlassCard className="p-8">
+            <GlassCard className="p-8 relative">
+                <button onClick={onBack} className="absolute top-4 right-4 text-gray-400 hover:text-white z-10"><Icon path="M6 18L18 6M6 6l12 12" /></button>
                 <div className="text-center mb-8">
                     <h2 className="text-4xl font-bold text-white tracking-wider">VenueFlow</h2>
                     <p className="text-gray-300 mt-2">Smart venues. Perfect moments.</p>
@@ -300,30 +272,34 @@ const LoginPage = ({ onLogin, onSignUp }) => {
     );
 };
 
-const CalendarView = ({ bookings, onDayClick }) => {
-    const [currentDate, setCurrentDate] = useState(new Date());
+const CalendarView = ({ bookings, onDayClick, displayDate, setDisplayDate }) => {
     const calendarDays = useMemo(() => {
-        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        const startOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth(), 1);
+        const endOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth() + 1, 0);
         const daysInMonth = endOfMonth.getDate();
         const startDayOfWeek = startOfMonth.getDay();
         let days = [];
         for (let i = 0; i < startDayOfWeek; i++) { days.push({ key: `empty-${i}`, empty: true }); }
         for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), day));
+            const date = new Date(Date.UTC(displayDate.getFullYear(), displayDate.getMonth(), day));
             const dateStr = date.toISOString().split('T')[0];
             const dayBookings = bookings.filter(b => b && b.bookingDateTime && b.bookingDateTime.startsWith(dateStr));
             days.push({ key: `day-${day}`, day, date: dateStr, bookings: dayBookings });
         }
         return days;
-    }, [currentDate, bookings]);
-    const changeMonth = (offset) => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
+    }, [displayDate, bookings]);
+
+    const changeMonth = (offset) => {
+        setDisplayDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
+    };
+
     const getStatusColor = (status) => ({ 'confirmed': 'bg-green-500/50 border-green-400', 'pending': 'bg-yellow-500/50 border-yellow-400', 'completed': 'bg-blue-500/50 border-blue-400', 'rejected': 'bg-red-500/50 border-red-400' }[status] || 'bg-gray-500/50');
+
     return (
         <GlassCard className="w-full p-6">
             <div className="flex items-center justify-between mb-4">
-                 <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-white/10"><Icon path="M15.75 19.5L8.25 12l7.5-7.5" /></button>
-                <h3 className="text-xl font-bold text-white">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+                <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-white/10"><Icon path="M15.75 19.5L8.25 12l7.5-7.5" /></button>
+                <h3 className="text-xl font-bold text-white">{displayDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
                 <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-white/10"><Icon path="M8.25 4.5l7.5 7.5-7.5 7.5" /></button>
             </div>
             <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-gray-300 text-sm font-semibold">{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => <div key={day}>{day}</div>)}</div>
@@ -341,16 +317,27 @@ const CalendarView = ({ bookings, onDayClick }) => {
 const DashboardPage = ({ user, onLogout, bookings, onAddBooking, onUpdateBookingStatus, onCancelBooking }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [bookingDate, setBookingDate] = useState(null);
-    const [bookingStep, setBookingStep] = useState('assistant'); // assistant, manual, form
-    const [aiSuggestion, setAiSuggestion] = useState(null);
-    const [isAiLoading, setIsAiLoading] = useState(false);
+    const [selectedVenue, setSelectedVenue] = useState(null);
     const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
     const [summaryContent, setSummaryContent] = useState('');
     const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-    const handleDayClick = (date) => { setBookingDate(date); setIsModalOpen(true); };
-    const handleBooking = (bookingData) => { onAddBooking(bookingData); closeModal(); };
-    const handleSuggestion = (suggestion) => { setAiSuggestion(suggestion); setBookingStep('form'); };
-    const closeModal = () => { setIsModalOpen(false); setBookingStep('assistant'); setAiSuggestion(null); };
+    const [displayDate, setDisplayDate] = useState(new Date());
+
+    const handleDayClick = (date) => { 
+        setBookingDate(date); 
+        setIsModalOpen(true); 
+    };
+    
+    const handleBooking = (bookingData) => { 
+        onAddBooking(bookingData); 
+        closeModal(); 
+    };
+    
+    const closeModal = () => { 
+        setIsModalOpen(false); 
+        setSelectedVenue(null);
+    };
+
     const handleSummarizeClick = async (booking) => {
         if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
             alert("Please set your Gemini API key to use the summarize feature.");
@@ -374,37 +361,59 @@ const DashboardPage = ({ user, onLogout, bookings, onAddBooking, onUpdateBooking
             setIsSummaryLoading(false);
         }
     };
+    
+    const handleMonthChange = (e) => {
+        const newMonth = parseInt(e.target.value);
+        setDisplayDate(new Date(displayDate.getFullYear(), newMonth, 1));
+    };
+
+    const handleYearChange = (e) => {
+        const newYear = parseInt(e.target.value);
+        setDisplayDate(new Date(newYear, displayDate.getMonth(), 1));
+    };
+
     const myBookings = bookings.filter(b => b && b.userId === user.id);
+    const currentYear = new Date().getFullYear();
+    const years = [currentYear, currentYear + 1, currentYear + 2];
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
     return (
-        <div className="w-full max-w-7xl mx-auto px-4 animate-fade-in">
-            <header className="flex flex-wrap justify-between items-center py-4 mb-6">
+        <div className="w-full max-w-7xl mx-auto px-4 animate-fade-in-up">
+            <header className="flex flex-wrap justify-between items-center py-4 mb-8 pb-6 border-b border-white/10">
                 <div>
-                    <h2 className="text-4xl font-bold text-white">VenueFlow Dashboard</h2>
-                    <p className="text-gray-300">Welcome, <span className="font-bold text-indigo-300">{user.name} ({user.role})</span></p>
+                    <h2 className="text-4xl font-bold text-white" style={{textShadow: '0 0 25px rgba(139, 92, 246, 0.9)'}}>VenueFlow Dashboard</h2>
+                    <p className="text-gray-100 mt-1">Welcome, <span className="font-bold text-indigo-300">{user.name} ({user.role})</span></p>
                 </div>
                 <div className="flex items-center gap-4 mt-4 md:mt-0">
                     <button onClick={onLogout} title="Logout" className="p-2 text-gray-300 hover:text-white transition-colors rounded-full hover:bg-white/10"><Icon path="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></button>
                 </div>
             </header>
-            <main className="space-y-8">
-                <h3 className="text-2xl font-semibold text-white tracking-wide">Booking Calendar</h3>
-                <CalendarView bookings={bookings} onDayClick={handleDayClick}/>
-                {user.role === 'user' ? (<UserBookingsView bookings={myBookings} onCancelBooking={onCancelBooking} onSummarize={handleSummarizeClick} />) : (<AdminBookingsView allBookings={bookings} onStatusChange={onUpdateBookingStatus} onSummarize={handleSummarizeClick}/>)}
+            <main className="space-y-8 animate-fade-in-up" style={{animationDelay: '200ms'}}>
+                <div className="flex justify-between items-center">
+                    <h3 className="text-3xl font-semibold text-white tracking-wide">Booking Calendar</h3>
+                    <div className="flex gap-2">
+                        <select value={displayDate.getMonth()} onChange={handleMonthChange} className="bg-white/10 border border-white/20 rounded-lg text-white p-2">
+                            {months.map((month, index) => <option key={month} value={index} className="bg-gray-800">{month}</option>)}
+                        </select>
+                        <select value={displayDate.getFullYear()} onChange={handleYearChange} className="bg-white/10 border border-white/20 rounded-lg text-white p-2">
+                            {years.map(year => <option key={year} value={year} className="bg-gray-800">{year}</option>)}
+                        </select>
+                    </div>
+                </div>
+
+                <CalendarView bookings={bookings} onDayClick={handleDayClick} displayDate={displayDate} setDisplayDate={setDisplayDate} />
+
+                <div className="animate-fade-in-up" style={{animationDelay: '400ms'}}>
+                    {user.role === 'user' ? (<UserBookingsView bookings={myBookings} onCancelBooking={onCancelBooking} onSummarize={handleSummarizeClick} />) : (<AdminBookingsView allBookings={bookings} onStatusChange={onUpdateBookingStatus} onSummarize={handleSummarizeClick}/>)}
+                </div>
             </main>
             <Modal isOpen={isModalOpen} onClose={closeModal}>
-                {bookingStep === 'assistant' && (
-                    <>
-                        <AIBookingAssistant onSuggestion={handleSuggestion} date={bookingDate} setIsLoading={setIsAiLoading} isLoading={isAiLoading}/>
-                        <button onClick={() => setBookingStep('manual')} className="w-full text-center mt-4 text-gray-300 hover:text-white text-sm">Or, book manually</button>
-                    </>
-                )}
-                {bookingStep === 'manual' && (
+                 {!selectedVenue ? (
                     <div>
                         <h3 className="text-2xl font-bold text-white mb-4">Select a Venue to Book on {bookingDate}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{Object.values(VENUES_CONFIG).map(venue => (<div key={venue.id} onClick={() => { setAiSuggestion({ venueId: venue.id }); setBookingStep('form'); }} className="p-4 bg-white/10 rounded-lg cursor-pointer hover:bg-indigo-500/50 transition-colors"><h4 className="font-bold text-lg">{venue.name}</h4></div>))}</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{Object.values(VENUES_CONFIG).map(venue => (<div key={venue.id} onClick={() => setSelectedVenue(venue.id)} className="p-4 bg-white/10 rounded-lg cursor-pointer hover:bg-indigo-500/50 transition-colors"><h4 className="font-bold text-lg">{venue.name}</h4></div>))}</div>
                     </div>
-                )}
-                {bookingStep === 'form' && aiSuggestion && ( <BookingForm venueId={aiSuggestion.venueId} onBook={handleBooking} date={bookingDate} user={user} initialDetails={aiSuggestion.details} /> )}
+                ) : ( <BookingForm venueId={selectedVenue} onBook={handleBooking} date={bookingDate} user={user} /> )}
             </Modal>
              <Modal isOpen={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)}>
                 <h3 className="text-2xl font-bold text-white mb-4">✨ Booking Summary</h3>
@@ -427,6 +436,7 @@ const AdminBookingsView = ({ allBookings, onStatusChange, onSummarize }) => (
         <GlassCard className="p-6"><div className="space-y-4">{allBookings.map(b => (<div key={b.id} className="grid grid-cols-1 md:grid-cols-5 items-center gap-4 bg-white/5 p-4 rounded-lg"><div><span className="font-bold">{b.bookedBy}</span> <p className="text-sm text-gray-300">({VENUES_CONFIG[b.venueId]?.name || 'Unknown Venue'})</p></div><div className="text-gray-300 md:col-span-2">{formatDateTimeRange(b.bookingDateTime, b.endTime)}</div><div className="font-semibold capitalize">{b.status}</div><div className="flex gap-2 items-center">{b.status === 'pending' && (<><button onClick={() => onStatusChange(b.id, 'confirmed')} className="w-full text-sm bg-green-500/80 hover:bg-green-500 text-white font-bold py-2 px-2 rounded-lg">Confirm</button><button onClick={() => onStatusChange(b.id, 'rejected')} className="w-full text-sm bg-red-500/80 hover:bg-red-500 text-white font-bold py-2 px-2 rounded-lg">Reject</button></>)}<button onClick={() => onSummarize(b)} title="Summarize Booking" className="p-2 text-indigo-400 hover:text-indigo-300">✨</button></div></div>))}</div></GlassCard>
     </div>
 );
+
 
 // --- MAIN APP COMPONENT ---
 
@@ -558,7 +568,7 @@ export default function App() {
           case 'auth':
               return (
                 <div className="min-h-screen w-full flex items-center justify-center">
-                    <LoginPage onLogin={handleLogin} onSignUp={handleSignUp} />
+                    <LoginPage onLogin={handleLogin} onSignUp={handleSignUp} onBack={() => setAppState('landing')} />
                 </div>
               );
           case 'dashboard':
@@ -577,10 +587,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full bg-gray-900 text-white font-sans relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-gray-900 via-indigo-900/40 to-black"></div>
-      <main className="w-full z-10">
-        {renderContent()}
-      </main>
+        <div className="absolute top-0 left-0 w-full h-full animated-gradient-bg z-0"></div>
+        <main className="w-full z-10 relative">
+            {renderContent()}
+        </main>
     </div>
   );
 }
