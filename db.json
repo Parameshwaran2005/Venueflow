@@ -1,0 +1,141 @@
+{
+  "users": [
+    {
+      "id": "admin01",
+      "email": "admin@venueflow.com",
+      "password": "adminpassword",
+      "name": "Admin",
+      "role": "admin"
+    },
+    {
+      "id": "user01",
+      "email": "alex@venueflow.com",
+      "password": "userpassword",
+      "name": "Alex",
+      "role": "user"
+    },
+    {
+      "id": "user02",
+      "email": "bob@venueflow.com",
+      "password": "userpassword",
+      "name": "Bob",
+      "role": "user"
+    },
+    {
+      "id": "2523",
+      "name": "Tushar",
+      "email": "tushar@gmail.com",
+      "password": "tushar",
+      "role": "user"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "1",
+      "userId": "user01",
+      "venueId": "auditorium",
+      "date": "2025-11-15",
+      "details": {
+        "seating": "VIP",
+        "av": "Projector",
+        "ac": "22°C",
+        "refreshments": "Lunch Buffet for 50 members"
+      },
+      "status": "confirmed",
+      "bookedBy": "Alex"
+    },
+    {
+      "id": "2",
+      "userId": "user01",
+      "venueId": "ramanujan",
+      "date": "2025-11-20",
+      "details": {
+        "seating": "Guest Special Seating",
+        "refreshments": "Tea/Coffee for 20 members",
+        "av": "Audio-Video System"
+      },
+      "status": "pending",
+      "bookedBy": "Alex"
+    },
+    {
+      "id": "aeda",
+      "venueId": "auditorium",
+      "date": "2025-10-01",
+      "details": {
+        "refreshments": "snacks for 10 members"
+      },
+      "bookedBy": "Alex",
+      "userId": "user01",
+      "status": "confirmed"
+    },
+    {
+      "id": "2986",
+      "venueId": "auditorium",
+      "bookingDateTime": "2025-10-03T10:00",
+      "endTime": "2025-10-03T11:00",
+      "details": {
+        "ac": "Yes",
+        "refreshments": "Tea/Coffee & Cookies for 10 members"
+      },
+      "bookedBy": "Tushar",
+      "userId": "2523",
+      "status": "confirmed"
+    },
+    {
+      "id": "b1d6",
+      "venueId": "ramanujan",
+      "bookingDateTime": "2025-10-01T10:00",
+      "endTime": "2025-10-01T11:00",
+      "details": {
+        "refreshments": "Tea/Coffee for 10 members"
+      },
+      "bookedBy": "Admin",
+      "userId": "admin01",
+      "status": "rejected"
+    },
+    {
+      "id": "3822",
+      "venueId": "bus",
+      "bookingDateTime": "2025-10-01T10:00",
+      "endTime": "2025-10-01T11:00",
+      "details": {},
+      "bookedBy": "Admin",
+      "userId": "admin01",
+      "status": "confirmed"
+    },
+    {
+      "id": "bee7",
+      "venueId": "ramanujan",
+      "bookingDateTime": "2025-10-01T10:00",
+      "endTime": "2025-10-01T11:00",
+      "details": {
+        "refreshments": "Tea/Coffee for 10 members"
+      },
+      "bookedBy": "Admin",
+      "userId": "admin01",
+      "status": "rejected"
+    },
+    {
+      "id": "bfa7",
+      "venueId": "impactGreens",
+      "bookingDateTime": "2025-10-01T10:00",
+      "endTime": "2025-10-01T11:00",
+      "details": {},
+      "bookedBy": "Admin",
+      "userId": "admin01",
+      "status": "confirmed"
+    },
+    {
+      "id": "f9e1",
+      "venueId": "ramanujan",
+      "bookingDateTime": "2025-10-01T10:00",
+      "endTime": "2025-10-01T11:00",
+      "details": {
+        "refreshments": "Tea/Coffee for 10 members"
+      },
+      "bookedBy": "Admin",
+      "userId": "admin01",
+      "status": "rejected"
+    }
+  ]
+}
