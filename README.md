@@ -9,6 +9,7 @@ Currently, two official plugins are available:
 
 ## Procedure
 npm create vite@latest
+<br>
 Project name: venueflow-app (or any name you like)
 
 Select a framework: React
