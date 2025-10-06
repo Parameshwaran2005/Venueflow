@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 // --- CONFIGURATION ---
 const API_BASE_URL = 'http://localhost:3001';
 // IMPORTANT: Replace with your actual Gemini API key.
 // You can get one for free from Google AI Studio: https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = 'AIzaSyCp6fQV3-SPDWUHvXXoRsYuQRPBBnp4cj4';
+const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE';
 
 const VENUES_CONFIG = {
   auditorium: {
@@ -36,42 +36,13 @@ const VENUES_CONFIG = {
 };
 
 // --- MOCK DATA FALLBACK ---
-// This data is used if the backend server at API_BASE_URL is not running.
 const FALLBACK_USERS = [
-    {
-      "id": "admin01",
-      "email": "admin@venueflow.com",
-      "password": "adminpassword",
-      "name": "Admin",
-      "role": "admin"
-    },
-    {
-      "id": "user01",
-      "email": "alex@venueflow.com",
-      "password": "userpassword",
-      "name": "Alex",
-      "role": "user"
-    }
+    { "id": "admin01", "email": "admin@venueflow.com", "password": "adminpassword", "name": "Admin", "role": "admin" },
+    { "id": "user01", "email": "alex@venueflow.com", "password": "userpassword", "name": "Alex", "role": "user" }
 ];
-
 const FALLBACK_BOOKINGS = [
-    {
-      "id": 1,
-      "userId": "user01",
-      "venueId": "auditorium",
-      "bookingDateTime": "2025-11-15T14:30",
-      "endTime": "2025-11-15T16:30",
-      "details": {
-        "seating": "VIP",
-        "av": "Projector",
-        "ac": "Yes",
-        "refreshments": "Lunch Buffet for 50 members"
-      },
-      "status": "confirmed",
-      "bookedBy": "Alex"
-    }
+    { "id": 1, "userId": "user01", "venueId": "auditorium", "bookingDateTime": "2025-11-15T14:30", "endTime": "2025-11-15T16:30", "details": { "seating": "VIP", "av": "Projector", "ac": "Yes", "refreshments": "Lunch Buffet for 50 members" }, "status": "confirmed", "bookedBy": "Alex" }
 ];
-
 
 // --- HELPER & UI COMPONENTS ---
 
@@ -103,20 +74,13 @@ const InputField = ({ label, type = 'text', value, onChange, placeholder }) => (
 const formatDateTimeRange = (startISO, endISO) => {
     if (!startISO) return 'No date specified';
     const startDate = new Date(startISO);
-    
     const optionsDate = { year: 'numeric', month: 'short', day: 'numeric' };
     const datePart = startDate.toLocaleDateString(undefined, optionsDate);
-
     const optionsTime = { hour: 'numeric', minute: 'numeric', hour12: true };
     const startTimePart = startDate.toLocaleTimeString('en-US', optionsTime);
-    
-    if (!endISO) {
-        return `${datePart}, ${startTimePart}`;
-    }
-
+    if (!endISO) return `${datePart}, ${startTimePart}`;
     const endDate = new Date(endISO);
     const endTimePart = endDate.toLocaleTimeString('en-US', optionsTime);
-
     return `${datePart}, ${startTimePart} - ${endTimePart}`;
 };
 
@@ -140,42 +104,17 @@ const Modal = ({ isOpen, onClose, children }) => {
 
 const AIBookingAssistant = ({ onSuggestion, date, setIsLoading, isLoading }) => {
     const [prompt, setPrompt] = useState('');
-
     const handleGetSuggestion = async () => {
         if (!prompt || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
             alert("Please provide a prompt and ensure your Gemini API key is set.");
             return;
         }
         setIsLoading(true);
-
         const systemPrompt = `You are an expert venue booking assistant. A user wants to book a venue for ${date}. Analyze their request and return a JSON object with the most suitable venue and pre-filled details. The available venues are: ${JSON.stringify(Object.values(VENUES_CONFIG).map(v => ({id: v.id, name: v.name, features: v.features})))}. Your response MUST be a single, valid JSON object with the keys "venueId" and "details". The "details" object should contain keys relevant to the chosen venue's features. For example: { "venueId": "auditorium", "details": { "seating": "VIP", "av": "Projector", "ac": "Yes", "refreshments": "Lunch Buffet for 150 members" } }.`;
-        
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
-        
-        const payload = {
-          contents: [{ parts: [{ text: prompt }] }],
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                "venueId": { "type": "STRING" },
-                "details": { "type": "OBJECT" }
-              },
-              required: ["venueId", "details"]
-            }
-          }
-        };
-
+        const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "venueId": { "type": "STRING" }, "details": { "type": "OBJECT" } }, required: ["venueId", "details"] } } };
         try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`Gemini API error: ${response.statusText}`);
             const result = await response.json();
             const suggestionJson = JSON.parse(result.candidates[0].content.parts[0].text);
@@ -187,19 +126,15 @@ const AIBookingAssistant = ({ onSuggestion, date, setIsLoading, isLoading }) => 
             setIsLoading(false);
         }
     };
-    
     return (
         <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                ✨ AI Booking Assistant
-            </h3>
+            <h3 className="text-2xl font-bold text-white flex items-center gap-2">✨ AI Booking Assistant</h3>
             <p className="text-gray-300">Describe your event, and I'll suggest the best venue and options for you on <span className="font-semibold text-indigo-300">{date}</span>.</p>
             <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="e.g., 'A 3-day corporate event for 100 people with projectors, sound system, and a lunch buffet.'" className="w-full h-24 p-2 bg-white/5 border border-white/20 rounded-lg resize-none"></textarea>
             <PrimaryButton onClick={handleGetSuggestion} isLoading={isLoading}>Get Suggestion</PrimaryButton>
         </div>
     );
 };
-
 
 const BookingForm = ({ venueId, onBook, date, user, initialDetails = {} }) => {
     const venue = VENUES_CONFIG[venueId];
@@ -209,11 +144,7 @@ const BookingForm = ({ venueId, onBook, date, user, initialDetails = {} }) => {
     const [members, setMembers] = useState(initialDetails.refreshments?.match(/\d+/)?.[0] || 10);
     const [customRefreshment, setCustomRefreshment] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-
-    const handleDetailChange = (key, value) => {
-        setDetails(prev => ({...prev, [key]: value}));
-    };
-    
+    const handleDetailChange = (key, value) => setDetails(prev => ({...prev, [key]: value}));
     const handleSubmit = async () => {
         setIsLoading(true);
         let finalDetails = {...details};
@@ -221,17 +152,9 @@ const BookingForm = ({ venueId, onBook, date, user, initialDetails = {} }) => {
             const refreshmentChoice = details.refreshments === 'Custom' ? customRefreshment : details.refreshments;
             finalDetails.refreshments = `${refreshmentChoice || venue.options.refreshments[0]} for ${members} members`;
         }
-        await onBook({ 
-            venueId: venue.id, 
-            bookingDateTime: `${date}T${startTime}`, 
-            endTime: `${date}T${endTime}`, 
-            details: finalDetails, 
-            bookedBy: user.name, 
-            userId: user.id 
-        });
+        await onBook({ venueId: venue.id, bookingDateTime: `${date}T${startTime}`, endTime: `${date}T${endTime}`, details: finalDetails, bookedBy: user.name, userId: user.id });
         setIsLoading(false);
     };
-
     return (
         <div className="space-y-6">
             <h3 className="text-2xl font-bold text-white">Book: {venue.name}</h3>
@@ -260,8 +183,66 @@ const BookingForm = ({ venueId, onBook, date, user, initialDetails = {} }) => {
     );
 };
 
-
 // --- CORE VIEW COMPONENTS ---
+
+const LandingPage = ({ onGetStarted }) => {
+    useEffect(() => {
+        const style = document.createElement('style');
+        // Add Google Font import for 'Poppins'
+        const fontLink = document.createElement('link');
+        fontLink.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@300;700;900&display=swap";
+        fontLink.rel = "stylesheet";
+        document.head.appendChild(fontLink);
+        
+        style.textContent = `
+            .font-poppins { font-family: 'Poppins', sans-serif; }
+            .animated-gradient-bg {
+                background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1c1c3c);
+                background-size: 400% 400%;
+                animation: gradient 15s ease infinite;
+            }
+
+            @keyframes gradient {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            
+            @keyframes fade-in-scale {
+                0% { opacity: 0; transform: scale(0.95); }
+                100% { opacity: 1; transform: scale(1); }
+            }
+
+            .content-animation {
+                animation: fade-in-scale 1s ease-out forwards;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        return () => {
+            document.head.removeChild(style);
+            document.head.removeChild(fontLink);
+        };
+    }, []);
+
+    return (
+        <div className="h-screen w-screen relative flex items-center justify-center overflow-hidden animated-gradient-bg">
+            <div className="absolute inset-0 bg-black/30"></div>
+            <div className="relative z-10 text-center p-8 content-animation">
+                <h1 className="text-6xl md:text-8xl font-black text-white uppercase tracking-wider font-poppins" style={{textShadow: '0 0 20px rgba(192, 132, 252, 0.6)'}}>VenueFlow</h1>
+                <p className="mt-4 text-lg md:text-xl text-gray-300 font-light font-poppins">Smart venues. Perfect moments.</p>
+                <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+                    <button 
+                        onClick={onGetStarted} 
+                        className="w-full sm:w-auto font-bold py-3 px-8 rounded-lg bg-indigo-500/80 text-white border border-indigo-400 backdrop-blur-md hover:bg-indigo-500 shadow-[0_0_15px_rgba(139,92,246,0.5)] hover:shadow-[0_0_25px_rgba(139,92,246,0.8)] transition-all duration-300 transform hover:scale-105">
+                        Get Started
+                    </button>
+                    <button className="w-full sm:w-auto font-bold py-3 px-8 rounded-lg border-2 border-white/20 text-white/80 bg-white/10 backdrop-blur-md hover:bg-white/20 hover:text-white transition-all duration-300 transform hover:scale-105">Learn More</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const LoginPage = ({ onLogin, onSignUp }) => {
     const [isLoginView, setIsLoginView] = useState(true);
@@ -271,7 +252,6 @@ const LoginPage = ({ onLogin, onSignUp }) => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-
     const handleAuthAction = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -287,7 +267,6 @@ const LoginPage = ({ onLogin, onSignUp }) => {
         }
         setIsLoading(false);
     };
-
     return (
         <div className="w-full max-w-md mx-auto animate-fade-in-up">
             <GlassCard className="p-8">
@@ -338,10 +317,8 @@ const CalendarView = ({ bookings, onDayClick }) => {
         }
         return days;
     }, [currentDate, bookings]);
-
     const changeMonth = (offset) => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
     const getStatusColor = (status) => ({ 'confirmed': 'bg-green-500/50 border-green-400', 'pending': 'bg-yellow-500/50 border-yellow-400', 'completed': 'bg-blue-500/50 border-blue-400', 'rejected': 'bg-red-500/50 border-red-400' }[status] || 'bg-gray-500/50');
-
     return (
         <GlassCard className="w-full p-6">
             <div className="flex items-center justify-between mb-4">
@@ -370,25 +347,10 @@ const DashboardPage = ({ user, onLogout, bookings, onAddBooking, onUpdateBooking
     const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
     const [summaryContent, setSummaryContent] = useState('');
     const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-
     const handleDayClick = (date) => { setBookingDate(date); setIsModalOpen(true); };
-    
-    const handleBooking = (bookingData) => {
-        onAddBooking(bookingData);
-        closeModal();
-    };
-
-    const handleSuggestion = (suggestion) => {
-        setAiSuggestion(suggestion);
-        setBookingStep('form');
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setBookingStep('assistant');
-        setAiSuggestion(null);
-    };
-
+    const handleBooking = (bookingData) => { onAddBooking(bookingData); closeModal(); };
+    const handleSuggestion = (suggestion) => { setAiSuggestion(suggestion); setBookingStep('form'); };
+    const closeModal = () => { setIsModalOpen(false); setBookingStep('assistant'); setAiSuggestion(null); };
     const handleSummarizeClick = async (booking) => {
         if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
             alert("Please set your Gemini API key to use the summarize feature.");
@@ -397,20 +359,11 @@ const DashboardPage = ({ user, onLogout, bookings, onAddBooking, onUpdateBooking
         setIsSummaryLoading(true);
         setIsSummaryModalOpen(true);
         setSummaryContent('');
-
         const prompt = `Summarize the following booking details in a friendly, concise paragraph. Convert all details into a natural sentence. Booking made by: ${booking.bookedBy}. Venue: ${VENUES_CONFIG[booking.venueId].name}. Date and Time: ${formatDateTimeRange(booking.bookingDateTime, booking.endTime)}. Status: ${booking.status}. Other details: ${JSON.stringify(booking.details)}.`;
-        
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
-        const payload = {
-          contents: [{ parts: [{ text: prompt }] }]
-        };
-
+        const payload = { contents: [{ parts: [{ text: prompt }] }] };
         try {
-             const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error('Gemini API request failed');
             const result = await response.json();
             setSummaryContent(result.candidates[0].content.parts[0].text);
@@ -421,9 +374,7 @@ const DashboardPage = ({ user, onLogout, bookings, onAddBooking, onUpdateBooking
             setIsSummaryLoading(false);
         }
     };
-
     const myBookings = bookings.filter(b => b && b.userId === user.id);
-
     return (
         <div className="w-full max-w-7xl mx-auto px-4 animate-fade-in">
             <header className="flex flex-wrap justify-between items-center py-4 mb-6">
@@ -435,13 +386,11 @@ const DashboardPage = ({ user, onLogout, bookings, onAddBooking, onUpdateBooking
                     <button onClick={onLogout} title="Logout" className="p-2 text-gray-300 hover:text-white transition-colors rounded-full hover:bg-white/10"><Icon path="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></button>
                 </div>
             </header>
-            
             <main className="space-y-8">
                 <h3 className="text-2xl font-semibold text-white tracking-wide">Booking Calendar</h3>
                 <CalendarView bookings={bookings} onDayClick={handleDayClick}/>
                 {user.role === 'user' ? (<UserBookingsView bookings={myBookings} onCancelBooking={onCancelBooking} onSummarize={handleSummarizeClick} />) : (<AdminBookingsView allBookings={bookings} onStatusChange={onUpdateBookingStatus} onSummarize={handleSummarizeClick}/>)}
             </main>
-            
             <Modal isOpen={isModalOpen} onClose={closeModal}>
                 {bookingStep === 'assistant' && (
                     <>
@@ -457,7 +406,6 @@ const DashboardPage = ({ user, onLogout, bookings, onAddBooking, onUpdateBooking
                 )}
                 {bookingStep === 'form' && aiSuggestion && ( <BookingForm venueId={aiSuggestion.venueId} onBook={handleBooking} date={bookingDate} user={user} initialDetails={aiSuggestion.details} /> )}
             </Modal>
-
              <Modal isOpen={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)}>
                 <h3 className="text-2xl font-bold text-white mb-4">✨ Booking Summary</h3>
                 {isSummaryLoading ? (<div className="flex justify-center items-center h-24"><div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div></div>) : (<p className="text-gray-300 whitespace-pre-wrap">{summaryContent}</p>)}
@@ -483,6 +431,7 @@ const AdminBookingsView = ({ allBookings, onStatusChange, onSummarize }) => (
 // --- MAIN APP COMPONENT ---
 
 export default function App() {
+  const [appState, setAppState] = useState('landing'); // landing, auth, dashboard
   const [bookings, setBookings] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isBackendOnline, setIsBackendOnline] = useState(true);
@@ -502,8 +451,10 @@ export default function App() {
         setIsBackendOnline(false);
       }
     };
-    fetchBookings();
-  }, []);
+    if (appState === 'dashboard') {
+        fetchBookings();
+    }
+  }, [appState]);
 
   const handleLogin = useCallback(async (email, password) => {
     try {
@@ -513,14 +464,16 @@ export default function App() {
         const user = users[0];
         if (user && user.password === password) {
           setCurrentUser(user);
-          return null; // Success
+          setAppState('dashboard');
+          return null;
         }
-        return 'Invalid email or password.'; // Error
+        return 'Invalid email or password.';
     } catch(error) {
         console.warn("Login fetch failed. Using fallback users.");
         const user = FALLBACK_USERS.find(u => u.email === email.toLowerCase() && u.password === password);
         if (user) {
             setCurrentUser(user);
+            setAppState('dashboard');
             return null;
         }
         return 'Invalid email or password.';
@@ -532,34 +485,18 @@ export default function App() {
         if (!isBackendOnline) {
              return "Cannot sign up while offline. Please start the backend server.";
         }
-        // Check if user already exists
         const checkResponse = await fetch(`${API_BASE_URL}/users?email=${email.toLowerCase()}`);
         if (!checkResponse.ok) throw new Error('Failed to check for existing user.');
         const existingUsers = await checkResponse.json();
         if (existingUsers.length > 0) {
             return 'An account with this email already exists.';
         }
-        
-        // Create new user
-        const newUser = { 
-            id: 'user_' + Date.now(),
-            name, 
-            email: email.toLowerCase(), 
-            password, 
-            role: 'user' 
-        };
-        const createResponse = await fetch(`${API_BASE_URL}/users`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newUser)
-        });
-
-        if (!createResponse.ok) {
-            throw new Error('Server failed to create user.');
-        }
-
+        const newUser = { id: 'user_' + Date.now(), name, email: email.toLowerCase(), password, role: 'user' };
+        const createResponse = await fetch(`${API_BASE_URL}/users`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newUser) });
+        if (!createResponse.ok) throw new Error('Server failed to create user.');
         const createdUser = await createResponse.json();
-        setCurrentUser(createdUser); // Automatically log in the new user
+        setCurrentUser(createdUser);
+        setAppState('dashboard');
         return null;
     } catch(error) {
         console.error("Sign up failed:", error);
@@ -567,7 +504,10 @@ export default function App() {
     }
   }, [isBackendOnline]);
 
-  const handleLogout = useCallback(() => setCurrentUser(null), []);
+  const handleLogout = useCallback(() => {
+      setCurrentUser(null);
+      setAppState('landing');
+  }, []);
 
   const handleAddBooking = async (bookingData) => {
       if (!isBackendOnline) {
@@ -576,11 +516,7 @@ export default function App() {
       }
       try {
         const newBooking = { ...bookingData, status: 'pending' };
-        const response = await fetch(`${API_BASE_URL}/bookings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newBooking)
-        });
+        const response = await fetch(`${API_BASE_URL}/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newBooking) });
         const savedBooking = await response.json();
         setBookings(prev => [...prev, savedBooking]);
       } catch (error) {
@@ -594,11 +530,7 @@ export default function App() {
           return;
       }
     try {
-        const response = await fetch(`${API_BASE_URL}/bookings/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status })
-        });
+        const response = await fetch(`${API_BASE_URL}/bookings/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
         const updatedBooking = await response.json();
         setBookings(prev => prev.map(b => b.id === id ? updatedBooking : b));
     } catch (error) {
@@ -619,25 +551,35 @@ export default function App() {
       }
   };
 
+  const renderContent = () => {
+      switch(appState) {
+          case 'landing':
+              return <LandingPage onGetStarted={() => setAppState('auth')} />;
+          case 'auth':
+              return (
+                <div className="min-h-screen w-full flex items-center justify-center">
+                    <LoginPage onLogin={handleLogin} onSignUp={handleSignUp} />
+                </div>
+              );
+          case 'dashboard':
+              return <DashboardPage 
+                        user={currentUser} 
+                        onLogout={handleLogout} 
+                        bookings={bookings}
+                        onAddBooking={handleAddBooking}
+                        onUpdateBookingStatus={handleUpdateBookingStatus}
+                        onCancelBooking={handleCancelBooking}
+                     />;
+          default:
+              return <LandingPage onGetStarted={() => setAppState('auth')} />;
+      }
+  };
 
   return (
-    <div className="min-h-screen w-full bg-gray-900 text-white font-sans flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen w-full bg-gray-900 text-white font-sans relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-gray-900 via-indigo-900/40 to-black"></div>
-      <div className="absolute -top-1/4 -left-1/4 w-96 h-96 bg-purple-600/20 rounded-full filter blur-3xl animate-pulse"></div>
-      <div className="absolute -bottom-1/4 -right-1/4 w-96 h-96 bg-indigo-600/20 rounded-full filter blur-3xl animate-pulse animation-delay-4000"></div>
       <main className="w-full z-10">
-        {currentUser ? (
-          <DashboardPage 
-            user={currentUser} 
-            onLogout={handleLogout} 
-            bookings={bookings}
-            onAddBooking={handleAddBooking}
-            onUpdateBookingStatus={handleUpdateBookingStatus}
-            onCancelBooking={handleCancelBooking}
-            />
-        ) : (
-          <LoginPage onLogin={handleLogin} onSignUp={handleSignUp} />
-        )}
+        {renderContent()}
       </main>
     </div>
   );
